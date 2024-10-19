@@ -28,9 +28,9 @@ class Graph:
         self.edges[first][second] = weight
         self.edges[second][first] = weight  # Ensure symmetry for undirected graphs
 
-    def permute_(self, permutation:list):
+    def permute_(self, permutation):
         """
-        Permutes the nodes inplace, e.g. [2,0,1] places the 0th node at the place of the 2nd
+        Permutes the nodes inplace, e.g. [2,0,1] places the 2nd node at the place of the 0th
         :param permutation:
         """
         assert sorted(permutation) == list(range(self.nodes)), "permutations has to be a permutation of the nodes"
@@ -43,21 +43,21 @@ class Graph:
         # ix_ creates a matrix permutation of the rows and columns
         self.edges = self.edges[np.ix_(inverse_permutation, inverse_permutation)]
 
-    def permute(self, permutation:list):
+    def permute(self, permutation):
         """
-                Permutes the nodes, e.g. [2,0,1] places the 0th node at the place of the 2nd
-                :param permutation:
-                :return: permuted graph
-                """
+        Permutes the nodes, e.g. [2,0,1] places the 2nd node at the place of the 0th
+        :param permutation: inverse permutation
+        :return: permuted graph
+        """
         assert sorted(permutation) == list(range(self.nodes)), "permutations has to be a permutation of the nodes"
 
         # Compute the inverse of the permutation
-        inverse_permutation = [0] * self.nodes
-        for i, p in enumerate(permutation):
-            inverse_permutation[p] = i
+        #inverse_permutation = [0] * self.nodes
+        #for i, p in enumerate(permutation):
+        #    inverse_permutation[p] = i
 
         # ix_ creates a matrix permutation of the rows and columns
-        return Graph(self.nodes, self.edges[np.ix_(inverse_permutation, inverse_permutation)])
+        return Graph(self.nodes, self.edges[np.ix_(permutation, permutation)])
 
     def __add__(self, other):
         """
@@ -72,6 +72,7 @@ class Graph:
         Plot the graph using matplotlib.
         Nodes are placed in a circular layout, and edges are drawn between them with colors based on their weights.
 
+        :param title: plot title
         :param colormap: matplotlib colormap
         """
         # Check if there are any nodes in the graph

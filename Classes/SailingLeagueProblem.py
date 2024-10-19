@@ -2,7 +2,6 @@
 import gurobipy as gp
 from gurobipy import GRB
 
-from Classes.Graph import Graph
 from Classes.SailingSchedule import SailingSchedule
 
 class SailingLeagueProblem:
@@ -17,7 +16,6 @@ class SailingLeagueProblem:
         self.opj_val = None
         self.obj_schedule = None
         self.obj_gap = None
-        self.obj_graph = None
 
         self.n = n  # Number of teams
         assert n%2==0, "n has to be divisible by 2"
@@ -63,6 +61,12 @@ class SailingLeagueProblem:
                 model.addConstr(z[1] - sum(y[i][a][b - a - 1] for i in range(self.r)) >= 0)
                 model.addConstr(z[0] - sum(y[i][a][b - a - 1] for i in range(self.r)) <= 0)
 
+        # break some symmetry
+        for j in range(self.k):
+            model.addConstr(x[1][j] == 1)
+        for i in range(self.r):
+            model.addConstr(x[i][0] == 1)
+
         # Setting model parameters and optimizing it
         if not timelimit is None:
             model.Params.TimeLimit = timelimit
@@ -89,8 +93,5 @@ class SailingLeagueProblem:
         self.obj_schedule = SailingSchedule(self.k, 2, self.r, schedule)
 
     def create_graph(self):
-        """
-        Creating an instance of a graph for further analysis
-        """
-        assert self.obj_schedule is not None, "objective schedule has not been set, optimize first"
-        self.obj_graph = Graph(self.n, self.obj_schedule.get_competition_matrix())
+        assert not self.obj_gap is None, "problem has to be optimized to create a graph"
+        self.obj_schedule.create_graph()
