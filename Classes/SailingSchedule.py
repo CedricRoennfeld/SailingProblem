@@ -106,7 +106,8 @@ class SailingSchedule:
                                    for l in range(self.k)] for j in range(self.t)] for i in range(self.r)]))
         # create a new graph for a working copy
         if not self.graph is None:
-            new_schedule.create_graph()
+            new_schedule.graph = self.graph
+            new_schedule.graph.permute_(permutation)
         return new_schedule
 
     def __add__(self, other):

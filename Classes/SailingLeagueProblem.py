@@ -40,8 +40,7 @@ class SailingLeagueProblem:
         for i in range(self.r):
             y.append([])
             for j in range(self.n - 1):
-                y[i].append(
-                    model.addVars(self.n - 1 - j, lb=0.0, ub=1.0, name="y_" + str(i) + "_" + str(j), vtype=GRB.CONTINUOUS))
+                y[i].append(model.addVars(self.n - 1 - j, lb=0.0, ub=1.0, name="y_" + str(i) + "_" + str(j), vtype=GRB.CONTINUOUS))
         z = model.addVars(2, name="z", vtype=GRB.INTEGER)
 
         # Set objective
@@ -49,7 +48,8 @@ class SailingLeagueProblem:
 
         # Create constraints
         for i in range(self.r):
-            model.addConstr(sum(x[i][j] for j in range(self.n)) == self.k)
+            #model.addConstr(gp.quicksum(x[i][j] for j in range(self.n)) == self.k)
+            model.addConstr(gp.LinExpr((1.0, x[i][j]) for j in range(self.n)) == self.k)
             for a in range(self.n - 1):
                 for b in range(a + 1, self.n):
                     model.addConstr(x[i][a] + x[i][b] - y[i][a][b - a - 1] <= 1)
@@ -58,12 +58,17 @@ class SailingLeagueProblem:
                     model.addConstr(y[i][a][b - a - 1] - x[i][a] + x[i][b] <= 1)
         for a in range(self.n - 1):
             for b in range(a + 1, self.n):
-                model.addConstr(z[1] - sum(y[i][a][b - a - 1] for i in range(self.r)) >= 0)
-                model.addConstr(z[0] - sum(y[i][a][b - a - 1] for i in range(self.r)) <= 0)
+                #model.addConstr(z[1] - sum(y[i][a][b - a - 1] for i in range(self.r)) >= 0)
+                #model.addConstr(z[0] - sum(y[i][a][b - a - 1] for i in range(self.r)) <= 0)
+                #model.addConstr(gp.quicksum(y[i][a][b - a - 1] for i in range(self.r)) <= z[1])
+                #model.addConstr(gp.quicksum(y[i][a][b - a - 1] for i in range(self.r)) >= z[0])
+                model.addConstr(gp.LinExpr((1.0, y[i][a][b - a - 1]) for i in range(self.r)) <= z[1])
+                model.addConstr(gp.LinExpr((1.0, y[i][a][b - a - 1]) for i in range(self.r)) >= z[0])
+
 
         # break some symmetry
         for j in range(self.k):
-            model.addConstr(x[1][j] == 1)
+            model.addConstr(x[0][j] == 1)
         for i in range(self.r):
             model.addConstr(x[i][0] == 1)
 
@@ -71,6 +76,7 @@ class SailingLeagueProblem:
         if not timelimit is None:
             model.Params.TimeLimit = timelimit
         model.Params.OutputFlag = output_flag
+        model.Params.Symmetry = 2
         model.optimize()
 
         # Storing optimization results

@@ -4,13 +4,14 @@ import numpy as np
 import matplotlib.cm as cm  # Import colormap functionality
 
 class Graph:
-    def __init__(self, n, edges=None):
+    def __init__(self, n, edges=None, nodes=None):
         """
         Initialize a weighted undirected graph without loops.
         :param n: Number of nodes
         :param edges: Adjacency Matrix (has to be symmetric)
         """
-        self.nodes = n  # Number of nodes
+        self.n = n  # Number of nodes
+        self.nodes = list(range(n)) if nodes is None else nodes
 
         # Initialize edges with a zero matrix if no edges are provided
         self.edges = np.zeros((n, n)) if edges is None else np.array(edges)
@@ -33,15 +34,16 @@ class Graph:
         Permutes the nodes inplace, e.g. [2,0,1] places the 2nd node at the place of the 0th
         :param permutation:
         """
-        assert sorted(permutation) == list(range(self.nodes)), "permutations has to be a permutation of the nodes"
+        assert sorted(permutation) == list(range(self.n)), "permutations has to be a permutation of the nodes"
 
         # Compute the inverse of the permutation
-        inverse_permutation = [0] * self.nodes
+        inverse_permutation = [0] * self.n
         for i, p in enumerate(permutation):
             inverse_permutation[p] = i
 
         # ix_ creates a matrix permutation of the rows and columns
         self.edges = self.edges[np.ix_(inverse_permutation, inverse_permutation)]
+        self.nodes = [self.nodes[i] for i in permutation]
 
     def permute(self, permutation):
         """
@@ -49,7 +51,7 @@ class Graph:
         :param permutation: inverse permutation
         :return: permuted graph
         """
-        assert sorted(permutation) == list(range(self.nodes)), "permutations has to be a permutation of the nodes"
+        assert sorted(permutation) == list(range(self.n)), "permutations has to be a permutation of the nodes"
 
         # Compute the inverse of the permutation
         #inverse_permutation = [0] * self.nodes
@@ -57,15 +59,15 @@ class Graph:
         #    inverse_permutation[p] = i
 
         # ix_ creates a matrix permutation of the rows and columns
-        return Graph(self.nodes, self.edges[np.ix_(permutation, permutation)])
+        return Graph(self.n, self.edges[np.ix_(permutation, permutation)], [self.nodes[i] for i in permutation])
 
     def __add__(self, other):
         """
         Adds two graphs of same size together by adding there edge weights.
         :param other:
         """
-        assert isinstance(other, Graph) and self.nodes == other.nodes, "can only add graphs with the same number of nodes"
-        return Graph(self.nodes, self.edges+other.edges)
+        assert isinstance(other, Graph) and self.n == other.n, "can only add graphs with the same number of nodes"
+        return Graph(self.n, self.edges + other.edges)
 
     def plot_graph(self, title=None, colormap=cm.jet):
         """
@@ -76,13 +78,13 @@ class Graph:
         :param colormap: matplotlib colormap
         """
         # Check if there are any nodes in the graph
-        if self.nodes == 0:
+        if self.n == 0:
             print("Graph is empty")
             return
 
         # Calculate positions of nodes on a circle for visualization
         # Starting at pi/2 for the first node being at top
-        angles = np.linspace(0.5 * np.pi, 2.5 * np.pi, self.nodes, endpoint=False)
+        angles = np.linspace(0.5 * np.pi, 2.5 * np.pi, self.n, endpoint=False)
         node_pos = np.array([[np.cos(angle), np.sin(angle)] for angle in angles])
 
         # Set up the plotting area
@@ -107,8 +109,14 @@ class Graph:
                 plt.plot([node_pos[i][0], node_pos[j][0]], [node_pos[i][1], node_pos[j][1]], color=color, linewidth=2)
 
         # Plot nodes
-        for i in range(self.nodes):
+        for i in range(self.n):
             plt.plot(node_pos[i][0], node_pos[i][1], 'o', markersize=10, color='lightblue', markeredgecolor='black')
+
+            # Add labels (node numbers) slightly outside of the circle
+            for i, (x, y) in enumerate(node_pos):
+                label_x = x * 1.15
+                label_y = y * 1.15
+                plt.text(label_x, label_y, str(self.nodes[i]), fontsize=12, ha='center', va='center')
 
         # Set equal aspect ratio and remove axis for better visual appearance
         plt.gca().set_aspect('equal')
