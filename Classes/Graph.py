@@ -28,7 +28,46 @@ class Graph:
         self.edges[first][second] = weight
         self.edges[second][first] = weight  # Ensure symmetry for undirected graphs
 
-    def plot_graph(self, colormap=cm.jet):
+    def permute_(self, permutation:list):
+        """
+        Permutes the nodes inplace, e.g. [2,0,1] places the 0th node at the place of the 2nd
+        :param permutation:
+        """
+        assert sorted(permutation) == list(range(self.nodes)), "permutations has to be a permutation of the nodes"
+
+        # Compute the inverse of the permutation
+        inverse_permutation = [0] * self.nodes
+        for i, p in enumerate(permutation):
+            inverse_permutation[p] = i
+
+        # ix_ creates a matrix permutation of the rows and columns
+        self.edges = self.edges[np.ix_(inverse_permutation, inverse_permutation)]
+
+    def permute(self, permutation:list):
+        """
+                Permutes the nodes, e.g. [2,0,1] places the 0th node at the place of the 2nd
+                :param permutation:
+                :return: permuted graph
+                """
+        assert sorted(permutation) == list(range(self.nodes)), "permutations has to be a permutation of the nodes"
+
+        # Compute the inverse of the permutation
+        inverse_permutation = [0] * self.nodes
+        for i, p in enumerate(permutation):
+            inverse_permutation[p] = i
+
+        # ix_ creates a matrix permutation of the rows and columns
+        return Graph(self.nodes, self.edges[np.ix_(inverse_permutation, inverse_permutation)])
+
+    def __add__(self, other):
+        """
+        Adds two graphs of same size together by adding there edge weights.
+        :param other:
+        """
+        assert isinstance(other, Graph) and self.nodes == other.nodes, "can only add graphs with the same number of nodes"
+        return Graph(self.nodes, self.edges+other.edges)
+
+    def plot_graph(self, title=None, colormap=cm.jet):
         """
         Plot the graph using matplotlib.
         Nodes are placed in a circular layout, and edges are drawn between them with colors based on their weights.
@@ -73,4 +112,6 @@ class Graph:
         # Set equal aspect ratio and remove axis for better visual appearance
         plt.gca().set_aspect('equal')
         plt.gca().set_axis_off()
+        if title is not None:
+            plt.title(title)
         plt.show()
