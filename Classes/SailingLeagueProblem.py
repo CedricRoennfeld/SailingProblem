@@ -1,24 +1,40 @@
-# imports
+# Imports
 import gurobipy as gp
 from gurobipy import GRB
 
+from Classes.Graph import Graph
 from Classes.SailingSchedule import SailingSchedule
 
 class SailingLeagueProblem:
     def __init__(self, n,r):
-        self.opjVal = None
-        self.objSchedule = None
-        self.objGap = None
-        self.n = n
-        assert n%2==0, "n has to be divisible by 2"
-        self.k = n//2
-        self.r = r
+        """
+        Initializing a Sailing League Problem (SLP)
 
-    def solve(self, timelimit:int = None):
-        # create model
+        :param n: Number of teams (has to be even)
+        :param r: Number of flights
+        """
+        # Initialize various objective Variables for saving results after optimizing
+        self.opj_val = None
+        self.obj_schedule = None
+        self.obj_gap = None
+        self.obj_graph = None
+
+        self.n = n  # Number of teams
+        assert n%2==0, "n has to be divisible by 2"
+        self.k = n//2   # Number of teams per race
+        self.r = r  # Number of flights
+
+    def optimize(self, timelimit:int = None, output_flag: bool = True):
+        """
+        Optimizing the problem using Gurobi and storing the last model variables as a schedule
+
+        :param timelimit: timelimit for Gurobi optimization
+        :param output_flag: disables/enables output of Gurobi optimization process (default True)
+        """
+        # Create model
         model = gp.Model(f"sailing_{self.k}_{self.r}")
 
-        # create variables
+        # Create variables
         x = []
         for i in range(self.r):
             x.append(model.addVars(self.n, name="x_" + str(i), vtype=GRB.BINARY))
@@ -30,10 +46,10 @@ class SailingLeagueProblem:
                     model.addVars(self.n - 1 - j, lb=0.0, ub=1.0, name="y_" + str(i) + "_" + str(j), vtype=GRB.CONTINUOUS))
         z = model.addVars(2, name="z", vtype=GRB.INTEGER)
 
-        # set objective
+        # Set objective
         model.setObjective(z[1] - z[0], sense=GRB.MINIMIZE)
 
-        # create constraints
+        # Create constraints
         for i in range(self.r):
             model.addConstr(sum(x[i][j] for j in range(self.n)) == self.k)
             for a in range(self.n - 1):
@@ -47,16 +63,18 @@ class SailingLeagueProblem:
                 model.addConstr(z[1] - sum(y[i][a][b - a - 1] for i in range(self.r)) >= 0)
                 model.addConstr(z[0] - sum(y[i][a][b - a - 1] for i in range(self.r)) <= 0)
 
-        # optimize model
-        if not timelimit == None:
+        # Setting model parameters and optimizing it
+        if not timelimit is None:
             model.Params.TimeLimit = timelimit
+        model.Params.OutputFlag = output_flag
         model.optimize()
 
-        self.opjVal = model.ObjVal
-        self.objGap = model.MIPGap
+        # Storing optimization results
+        self.opj_val = model.ObjVal
+        self.obj_gap = model.MIPGap
 
-        # extract solution
-        flights = []
+        # Extract schedule
+        schedule = []
         for i in range(self.r):
             race1 = []
             race2 = []
@@ -67,5 +85,12 @@ class SailingLeagueProblem:
                     race2.append(j)
             race1.sort()
             race2.sort()
-            flights.append((race1, race2))
-        self.objSchedule = SailingSchedule(self.k, 2, self.r, flights)
+            schedule.append((race1, race2))
+        self.obj_schedule = SailingSchedule(self.k, 2, self.r, schedule)
+
+    def create_graph(self):
+        """
+        Creating an instance of a graph for further analysis
+        """
+        assert self.obj_schedule is not None, "objective schedule has not been set, optimize first"
+        self.obj_graph = Graph(self.n, self.obj_schedule.get_competition_matrix())
