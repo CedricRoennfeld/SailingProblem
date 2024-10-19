@@ -2,10 +2,13 @@
 import gurobipy as gp
 from gurobipy import GRB
 
+from Classes.SailingSchedule import SailingSchedule
+
 class SailingLeagueProblem:
     def __init__(self, n,r):
-        self.objGap = None
         self.opjVal = None
+        self.objSchedule = None
+        self.objGap = None
         self.n = n
         assert n%2==0, "n has to be divisible by 2"
         self.k = n//2
@@ -51,3 +54,18 @@ class SailingLeagueProblem:
 
         self.opjVal = model.ObjVal
         self.objGap = model.MIPGap
+
+        # extract solution
+        flights = []
+        for i in range(self.r):
+            race1 = []
+            race2 = []
+            for j in range(self.n):
+                if x[i][j].X > .5:
+                    race1.append(j)
+                else:
+                    race2.append(j)
+            race1.sort()
+            race2.sort()
+            flights.append((race1, race2))
+        self.objSchedule = SailingSchedule(self.k, 2, self.r, flights)
