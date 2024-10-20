@@ -1,4 +1,8 @@
 # Imports
+import json
+import gzip
+import pickle
+
 import gurobipy as gp
 from gurobipy import GRB
 
@@ -73,9 +77,9 @@ class SailingLeagueProblem:
             model.addConstr(x[i][0] == 1)
 
         # Setting model parameters and optimizing it
+        model.Params.OutputFlag = output_flag
         if not timelimit is None:
             model.Params.TimeLimit = timelimit
-        model.Params.OutputFlag = output_flag
         model.Params.Symmetry = 2
         model.optimize()
 
@@ -98,6 +102,44 @@ class SailingLeagueProblem:
             schedule.append((race1, race2))
         self.obj_schedule = SailingSchedule(self.k, 2, self.r, schedule)
 
+    def save_results(self, filename):
+        """
+        Saves the optimization results (obj_val, obj_gap, obj_schedule.flights) to a compressed file.
+        :param filename: File to save the results.
+        """
+        # Prepare data to save
+        data = {
+            'obj_val': self.opj_val,
+            'obj_gap': self.obj_gap,
+            'flights': self.obj_schedule.flights.tolist()  # Converting numpy array to list
+        }
+
+        # Save the data in a compressed gzip file using pickle
+        with gzip.open(filename, 'wb') as file:
+            pickle.dump(data, file)
+
     def create_graph(self):
         assert not self.obj_gap is None, "problem has to be optimized to create a graph"
         self.obj_schedule.create_graph()
+
+
+def load_results(filename):
+    """
+    Reads optimization results from a file and reconstructs the SailingLeagueProblem and SailingSchedule objects.
+    :param filename: File to load the results from.
+    :return: Reconstructed SailingLeagueProblem object
+    """
+    with gzip.open(filename, 'rb') as file:
+        data = pickle.load(file)
+
+    # Recreate the SailingSchedule object
+    flights = np.array(data['flights'])
+    schedule = SailingSchedule(flights.shape[2], flights.shape[1], flights.shape[0], flights)
+
+    # Recreate the SailingLeagueProblem object and assign the loaded values
+    problem = SailingLeagueProblem(n=flights.shape[2] * 2, r=flights.shape[0])
+    problem.opj_val = data['obj_val']
+    problem.obj_gap = data['obj_gap']
+    problem.obj_schedule = schedule
+
+    return problem
