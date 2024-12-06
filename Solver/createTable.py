@@ -1,5 +1,6 @@
 from Classes.SailingLeagueProblem import SailingLeagueProblem
 
+# WARNING: File may not work after changes in SailingLeagueProblem.py (Parameters)
 
 # Function to print T[k][r] as a transposed r-k table
 def print_table(T):
@@ -19,7 +20,10 @@ def print_table(T):
         for k in k_values:
             # Check if T[k] contains the key r, otherwise print a placeholder (e.g., '-')
             if r in T[k]:
-                print(f"{T[k][r]:<5}", end="")  # Value T[k][r]
+                if T[k][r][1] == 0:
+                    print(f"{T[k][r][0]:<5}", end="")  # Value T[k][r]
+                else:
+                    print(f"~{T[k][r][0]:<5}", end="")
             else:
                 print(f"{'-':<5}", end="")  # Placeholder for missing values
         print()  # Newline after each row
@@ -33,7 +37,7 @@ def create_table(value_ranges: dict, timelimit):
             SLP = SailingLeagueProblem(2*k,r)
             SLP.optimize(timelimit=timelimit, output_flag=False)
             SLP.save_results(f"Results/result_{k}_{r}.rslt")
-            T[k][r] = int(SLP.opj_val)
+            T[k][r] = [int(SLP.opj_val),SLP.obj_gap]
             print_table(T)
 
     return T
