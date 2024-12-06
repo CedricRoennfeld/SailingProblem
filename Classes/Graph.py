@@ -122,5 +122,5 @@ class Graph:
         plt.gca().set_aspect('equal')
         plt.gca().set_axis_off()
         if title is not None:
-            plt.title(title)
+            plt.title(title, loc='left')
         plt.show()
