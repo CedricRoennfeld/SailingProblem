@@ -1,5 +1,6 @@
 # Imports
 import numpy as np
+import pandas as pd
 from matplotlib import pyplot as plt
 import matplotlib.cm as cm
 
@@ -130,6 +131,27 @@ class SailingSchedule:
             new_schedule.graph = self.graph
             new_schedule.graph.permute_(permutation)
         return new_schedule
+
+    def create_schedule_tableau(self, csv_file_path):
+
+        # Initialize a DataFrame with rows for flights and columns for teams
+        flight_data = np.zeros((self.r, self.n), dtype=int)
+
+        # Fill in the DataFrame based on team presence in races
+        for flight_idx, flight in enumerate(self.flights):
+            for race_idx, race in enumerate(flight, start=1):
+                for team in race:
+                    flight_data[flight_idx, team] = race_idx
+
+        # Convert to a pandas DataFrame
+        columns = [f"Team {i}" for i in range(self.n)]
+        df = pd.DataFrame(flight_data, columns=columns)
+        df.index = [f"Flight {i + 1}" for i in range(self.r)]
+
+        # Add an extra first column with flight numbers
+        df.insert(0, "Flight", range(1, self.r + 1))
+
+        df.to_csv(csv_file_path, index=False, header=False)
 
     def __add__(self, other):
         assert isinstance(other, SailingSchedule) and self.k==self.k and self.t==self.t, "Can only add two similar schedules."
