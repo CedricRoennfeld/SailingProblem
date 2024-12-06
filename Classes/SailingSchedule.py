@@ -1,5 +1,7 @@
 # Imports
 import numpy as np
+from matplotlib import pyplot as plt
+import matplotlib.cm as cm
 
 from Classes.Graph import Graph
 
@@ -36,7 +38,7 @@ class SailingSchedule:
         if not all(len(race) == self.k for race in flight):
             raise ValueError(f"Each race must contain exactly {self.k} teams.")
         # add flight
-        self.flights = np.append(self.flights, [flight])
+        self.flights = np.append(self.flights, [flight], axis=0)
 
     def get_competition_matrix(self):
         """
@@ -85,6 +87,25 @@ class SailingSchedule:
         Creating an instance of a graph for further analysis
         """
         self.graph = Graph(self.n, self.get_competition_matrix())
+
+    def plot_graph(self):
+        assert self.graph is not None
+        self.graph.plot_graph()
+
+    def plot_different_colors(self, colormap=cm.jet):
+        # Get a array of all different edge values
+        c_list = np.unique(self.graph.edges)
+        c_list = c_list[c_list != 0]
+
+
+        norm = plt.Normalize(min(c_list), max(c_list))
+        # Create a new array for each unique number, keeping only that number and setting others to zero
+        for weight in c_list:
+            new_array = np.where(self.graph.edges == weight, weight, 0)
+            new_array = np.where(self.graph.edges == weight, weight, 0)
+            new_graph = Graph(self.n, new_array)
+            color = colormap(norm(weight))
+            new_graph.plot_graph(title=weight, colormap = lambda x:color)
 
     def permute_(self, permutation):
         """
