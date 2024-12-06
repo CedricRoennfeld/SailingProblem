@@ -22,3 +22,4 @@ The goal of this work is to find optimal values for $\Delta(S)$ given a $SLP$. W
 $$f(n,k,r) := \min\{\Delta(S) : S \text{schedule for } SLP(n,k,r)\}$$
 
 We start by setting $t=2$ (each flight consists of two races) for further simplifications of our model.
+This is going to happen in an external document
